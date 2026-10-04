@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#111827">
+<title>OfflineSmartAssistant AI</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:#0b1020;
+  color:#f8fafc;
+  font-family:system-ui,Arial;
+}
+.app{
+  max-width:760px;
+  margin:auto;
+  min-height:100vh;
+  padding:18px;
+}
+.card{
+  background:#111827;
+  border:1px solid #263244;
+  border-radius:18px;
+  padding:18px;
+  margin-bottom:14px;
+}
+h1{margin-top:0;font-size:25px}
+.status{
+  padding:10px;
+  border-radius:10px;
+  background:#1f2937;
+  margin:10px 0;
+}
+textarea,input{
+  width:100%;
+  padding:13px;
+  border-radius:12px;
+  border:1px solid #374151;
+  background:#0f172a;
+  color:white;
+  font-size:16px;
+}
+textarea{
+  min-height:120px;
+  resize:vertical;
+}
+button{
+  border:0;
+  border-radius:12px;
+  padding:13px 18px;
+  margin-top:10px;
+  cursor:pointer;
+  font-size:16px;
+}
+.primary{
+  background:#2563eb;
+  color:white;
+}
+.secondary{
+  background:#374151;
+  color:white;
+}
+.answer{
+  white-space:pre-wrap;
+  line-height:1.8;
+  background:#0f172a;
+  padding:15px;
+  border-radius:12px;
+  min-height:80px;
+}
+.small{
+  color:#9ca3af;
+  font-size:13px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<div class="card">
+<h1>🤖 OfflineSmartAssistant AI</h1>
+
+<div class="small">
+مساعد ذكاء اصطناعي متصل بالإنترنت ويستخدم نموذج AI حقيقي.
+</div>
+
+<div id="status" class="status">
+جاري فحص الخادم...
+</div>
+</div>
+
+<div class="card">
+
+<label>عنوان خادم AI</label>
+
+<input
+id="apiBase"
+placeholder="https://your-koyeb-app.koyeb.app">
+
+<button
+class="secondary"
+onclick="saveApi()">
+حفظ عنوان الخادم
+</button>
+
+</div>
+
+<div class="card">
+
+<textarea
+id="message"
+placeholder="اكتب سؤالك هنا..."></textarea>
+
+<button
+class="primary"
+onclick="sendMessage()">
+إرسال إلى AI
+</button>
+
+</div>
+
+<div class="card">
+
+<h3>الإجابة</h3>
+
+<div id="answer" class="answer">
+لم يتم إرسال سؤال بعد.
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+const apiInput =
+document.getElementById("apiBase");
+
+const statusBox =
+document.getElementById("status");
+
+const answerBox =
+document.getElementById("answer");
+
+apiInput.value =
+localStorage.getItem("osa_api_base") ||
+location.origin;
+
+function baseUrl(){
+
+return apiInput.value
+.trim()
+.replace(/\/+$/,"");
+
+}
+
+function saveApi(){
+
+if(!baseUrl()){
+
+alert("أدخل عنوان الخادم.");
+
+return;
+
+}
+
+localStorage.setItem(
+"osa_api_base",
+baseUrl()
+);
+
+checkHealth();
+
+}
+
+async function checkHealth(){
+
+statusBox.textContent =
+"جاري الاتصال بالخادم...";
+
+try{
+
+const r =
+await fetch(
+baseUrl()+"/api/health"
+);
+
+const d =
+await r.json();
+
+if(r.ok && d.ok){
+
+if(d.ai_configured){
+
+statusBox.textContent =
+"🟢 الخادم يعمل والـAI مهيأ.";
+
+}else{
+
+statusBox.textContent =
+"🟠 الخادم يعمل لكن مفتاح AI غير مهيأ.";
+
+}
+
+}else{
+
+statusBox.textContent =
+"🔴 الخادم غير جاهز.";
+
+}
+
+}catch(e){
+
+statusBox.textContent =
+"🔴 تعذر الاتصال بخادم AI.";
+
+}
+
+}
+
+async function sendMessage(){
+
+const message =
+document
+.getElementById("message")
+.value
+.trim();
+
+if(!message){
+
+alert("اكتب سؤالًا أولًا.");
+
+return;
+
+}
+
+answerBox.textContent =
+"⏳ يتم الاتصال بنموذج الذكاء الاصطناعي...";
+
+try{
+
+const r =
+await fetch(
+baseUrl()+"/api/chat",
+{
+method:"POST",
+headers:{
+"Content-Type":
+"application/json"
+},
+body:JSON.stringify({
+message
+})
+}
+);
+
+const d =
+await r.json();
+
+if(!r.ok){
+
+throw new Error(
+d.error ||
+"حدث خطأ في الخادم."
+);
+
+}
+
+answerBox.textContent =
+d.answer ||
+"لم تصل إجابة.";
+
+}catch(e){
+
+answerBox.textContent =
+"❌ فشل الاتصال بخادم الذكاء الاصطناعي.\n\n"
++
+e.message;
+
+}
+
+}
+
+checkHealth();
+
+</script>
+
+</body>
+</html>
